@@ -6,6 +6,7 @@ const FOOD_DB = [
   // לחם ודגנים
   { name: "פרוסת לחם לבן", unit: "פרוסה", calories: 75, protein: 2.5, carbs: 14, fat: 1 },
   { name: "פרוסת לחם מלא", unit: "פרוסה", calories: 70, protein: 3.5, carbs: 12, fat: 1 },
+  { name: "פרוסת לחם קל", unit: "פרוסה", calories: 40, protein: 2, carbs: 7, fat: 0.5 },
   { name: "פיתה", unit: "יחידה", calories: 165, protein: 5.5, carbs: 33, fat: 1 },
   { name: "לחמנייה", unit: "יחידה", calories: 200, protein: 7, carbs: 38, fat: 2.5 },
   { name: "אורז לבן מבושל", unit: "כוס", calories: 205, protein: 4.3, carbs: 45, fat: 0.4 },
@@ -146,6 +147,9 @@ const FOOD_ALIASES = {
   "לחם": "פרוסת לחם לבן",
   "לחם לבן": "פרוסת לחם לבן",
   "לחם מלא": "פרוסת לחם מלא",
+  "לחם קל": "פרוסת לחם קל",
+  "פרוסת לחם קל": "פרוסת לחם קל",
+  "לחם דיאטטי": "פרוסת לחם קל",
   "פרוסת לחם": "פרוסת לחם לבן",
   "ביצה": "ביצה קשה",
   "ביצים": "ביצה קשה",
