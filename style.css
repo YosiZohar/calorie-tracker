@@ -264,6 +264,15 @@ textarea {
   font-size: 1rem;
 }
 .hint { font-size: 0.8rem; color: var(--muted); margin: 8px 0 16px; }
+.opt-tag {
+  font-size: 0.7rem;
+  background: #dcfce7;
+  color: var(--primary-dark);
+  padding: 1px 7px;
+  border-radius: 10px;
+  margin-inline-start: 6px;
+  font-weight: 600;
+}
 .modal-actions { display: flex; gap: 10px; align-items: center; }
 .modal-actions .primary-btn { margin-top: 0; flex: 1; }
 

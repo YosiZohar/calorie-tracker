@@ -63,7 +63,7 @@
         <textarea id="textInput" rows="3"
           placeholder="לדוגמה: 2 ביצים ופרוסת לחם מלא עם אבוקדו"></textarea>
         <button id="analyzeTextBtn" class="primary-btn">נתח קלוריות</button>
-        <p class="free-note">🆓 עובד חינם ללא מפתח — ניתוח מקומי מול מאגר המזון. עם מפתח OpenAI הניתוח חכם ומדויק יותר.</p>
+        <p class="free-note">🆓 עובד חינם לגמרי — ניתוח מקומי מול מאגר המזון, ללא צורך במפתח וללא הרשמה.</p>
       </div>
 
       <!-- קלט צילום -->
@@ -74,7 +74,7 @@
           <span id="uploadHint">לחצו כדי לצלם או לבחור תמונה של האוכל</span>
         </label>
         <button id="analyzePhotoBtn" class="primary-btn" disabled>נתח תמונה</button>
-        <p class="free-note">🔑 ניתוח תמונה דורש מפתח OpenAI (בהגדרות ⚙️). ללא מפתח — השתמשו בטאב טקסט או מאגר.</p>
+        <p class="free-note">� טיפ: לשימוש חינמי לגמרי השתמשו בטאב טקסט או מאגר. ניתוח תמונה הוא תוספת אופציונלית (דורשת מפתח OpenAI בהגדרות ⚙️).</p>
       </div>
 
       <!-- חיפוש במאגר -->
@@ -111,9 +111,9 @@
   <div id="settingsModal" class="modal" hidden>
     <div class="modal-content card">
       <h2>הגדרות</h2>
-      <label for="apiKeyInput">מפתח OpenAI API</label>
+      <label for="apiKeyInput">מפתח OpenAI API <span class="opt-tag">אופציונלי</span></label>
       <input type="password" id="apiKeyInput" placeholder="sk-..." />
-      <p class="hint">המפתח נשמר רק בדפדפן שלך (localStorage) ולא נשלח לאף שרת חיצוני מלבד OpenAI.</p>
+      <p class="hint">האפליקציה עובדת חינם ללא מפתח. המפתח דרוש רק לניתוח תמונות או לניתוח טקסט חכם יותר, ונשמר רק בדפדפן שלך.</p>
       <div class="modal-actions">
         <button id="saveSettingsBtn" class="primary-btn">שמירה</button>
         <button id="closeSettingsBtn" class="text-btn">סגירה</button>

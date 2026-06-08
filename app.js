@@ -337,7 +337,7 @@ async function analyzeText() {
     const items = analyzeTextLocally(text);
     if (items.length === 0) {
       setStatus(
-        'לא זוהה מזון מהמאגר. נסו ניסוח פשוט יותר (למשל "2 ביצים ופרוסת לחם"), או הזינו מפתח API לניתוח חכם.',
+        'לא זוהה מזון. נסו ניסוח פשוט יותר (למשל "2 ביצים ופרוסת לחם"), או הוסיפו מהמאגר (🔎).',
         "error"
       );
       return;
@@ -346,7 +346,7 @@ async function analyzeText() {
     els.textInput.value = "";
     const totalCal = items.reduce((s, i) => s + i.calories, 0);
     setStatus(
-      `נוספו ${items.length} פריטים (${Math.round(totalCal)} קק"ל) — ניתוח מקומי ללא מפתח.`,
+      `נוספו ${items.length} פריטים (${Math.round(totalCal)} קק"ל).`,
       ""
     );
     return;
