@@ -733,8 +733,14 @@ function computeProfile() {
         recommend = maintain - delta;
         const floor = p.sex === "female" ? 1200 : 1500;
         if (recommend < floor) recommend = floor;
+        // בטיחות: המלצה לירידה לא יכולה לעלות על קלוריות השמירה
+        if (recommend > maintain) recommend = maintain;
         goalLabel = "קלוריות לירידה במשקל";
-        note = `ליעד ${p.target} ק"ג (ירידה של ${Math.abs(diff)} ק"ג) — גירעון של כ-${delta} קק"ל ליום, כ-${ratePerWeek} ק"ג בשבוע.`;
+        if (recommend >= maintain) {
+          note = `הקלוריות לשמירה (${maintain}) כבר נמוכות — מומלץ לא לרדת מתחת לרף הבטיחות. הגבירו פעילות (צעדים) ליצירת גירעון בריא.`;
+        } else {
+          note = `ליעד ${p.target} ק"ג (ירידה של ${Math.abs(diff)} ק"ג) — גירעון של כ-${maintain - recommend} קק"ל ליום, כ-${ratePerWeek} ק"ג בשבוע.`;
+        }
       } else {
         // עלייה במשקל: עודף (מחצית מהקצב כדי להגביר מסת שריר)
         const surplus = Math.round((delta / 2) / 25) * 25;
