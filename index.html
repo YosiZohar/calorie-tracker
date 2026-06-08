@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>מעקב קלוריות יומי</title>
+  <meta name="theme-color" content="#16a34a" />
+  <meta name="description" content="מעקב קלוריות יומי לפי טקסט או צילום" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>🍎 מעקב קלוריות יומי</h1>
+    <div class="header-actions">
+      <button id="exportBtn" class="icon-btn" title="ייצוא גיבוי">⬇️</button>
+      <button id="importBtn" class="icon-btn" title="ייבוא גיבוי">⬆️</button>
+      <button id="settingsBtn" class="icon-btn" title="הגדרות">⚙️</button>
+    </div>
+    <input type="file" id="importFile" accept="application/json,.json" hidden />
+  </header>
+
+  <main class="container">
+    <!-- סיכום יומי -->
+    <section class="summary card">
+      <div class="summary-main">
+        <div class="calorie-ring">
+          <span id="totalCalories">0</span>
+          <small>קלוריות</small>
+        </div>
+        <div class="summary-goal">
+          <label for="goalInput">יעד יומי</label>
+          <div class="goal-row">
+            <input type="number" id="goalInput" min="0" step="50" value="2000" />
+            <span>קק"ל</span>
+          </div>
+          <div class="progress-bar">
+            <div id="progressFill" class="progress-fill"></div>
+          </div>
+          <p id="remainingText" class="remaining"></p>
+        </div>
+      </div>
+      <div class="macros">
+        <div class="macro"><strong id="totalProtein">0</strong><span>חלבון (ג')</span></div>
+        <div class="macro"><strong id="totalCarbs">0</strong><span>פחמימה (ג')</span></div>
+        <div class="macro"><strong id="totalFat">0</strong><span>שומן (ג')</span></div>
+      </div>
+    </section>
+
+    <!-- הוספת מזון -->
+    <section class="add-food card">
+      <h2>הוספת מזון</h2>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="text">✍️ טקסט</button>
+        <button class="tab" data-tab="photo">📷 צילום</button>
+        <button class="tab" data-tab="search">🔎 מאגר</button>
+      </div>
+
+      <!-- קלט טקסט -->
+      <div class="tab-panel active" id="panel-text">
+        <textarea id="textInput" rows="3"
+          placeholder="לדוגמה: 2 ביצים ופרוסת לחם מלא עם אבוקדו"></textarea>
+        <button id="analyzeTextBtn" class="primary-btn">נתח קלוריות</button>
+        <p class="free-note">🆓 עובד חינם ללא מפתח — ניתוח מקומי מול מאגר המזון. עם מפתח OpenAI הניתוח חכם ומדויק יותר.</p>
+      </div>
+
+      <!-- קלט צילום -->
+      <div class="tab-panel" id="panel-photo">
+        <label class="upload-area" id="uploadArea">
+          <input type="file" id="photoInput" accept="image/*" capture="environment" hidden />
+          <img id="previewImg" alt="תצוגה מקדימה" hidden />
+          <span id="uploadHint">לחצו כדי לצלם או לבחור תמונה של האוכל</span>
+        </label>
+        <button id="analyzePhotoBtn" class="primary-btn" disabled>נתח תמונה</button>
+        <p class="free-note">🔑 ניתוח תמונה דורש מפתח OpenAI (בהגדרות ⚙️). ללא מפתח — השתמשו בטאב טקסט או מאגר.</p>
+      </div>
+
+      <!-- חיפוש במאגר -->
+      <div class="tab-panel" id="panel-search">
+        <input type="text" id="searchInput" class="search-input"
+          placeholder="חיפוש מזון... לדוגמה: בננה, אורז, ביצה" />
+        <ul id="searchResults" class="search-results"></ul>
+      </div>
+
+      <p id="statusMsg" class="status"></p>
+    </section>
+
+    <!-- יומן היום -->
+    <section class="log card">
+      <div class="log-header">
+        <h2>היומן של היום</h2>
+        <button id="clearDayBtn" class="text-btn">נקה יום</button>
+      </div>
+      <ul id="foodList" class="food-list"></ul>
+      <p id="emptyLog" class="empty">עדיין לא הוספת מזון היום.</p>
+    </section>
+
+    <!-- היסטוריה שבועית -->
+    <section class="history card">
+      <div class="log-header">
+        <h2>7 הימים האחרונים</h2>
+        <span id="weekAvg" class="week-avg"></span>
+      </div>
+      <div id="chart" class="chart"></div>
+    </section>
+  </main>
+
+  <!-- מודאל הגדרות -->
+  <div id="settingsModal" class="modal" hidden>
+    <div class="modal-content card">
+      <h2>הגדרות</h2>
+      <label for="apiKeyInput">מפתח OpenAI API</label>
+      <input type="password" id="apiKeyInput" placeholder="sk-..." />
+      <p class="hint">המפתח נשמר רק בדפדפן שלך (localStorage) ולא נשלח לאף שרת חיצוני מלבד OpenAI.</p>
+      <div class="modal-actions">
+        <button id="saveSettingsBtn" class="primary-btn">שמירה</button>
+        <button id="closeSettingsBtn" class="text-btn">סגירה</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="foods.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

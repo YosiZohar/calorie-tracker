@@ -1,0 +1,569 @@
+// ===== מעקב קלוריות יומי =====
+// אפליקציית web: קלט טקסט או צילום אוכל -> ניתוח קלוריות עם OpenAI -> שמירה מקומית.
+
+const STORAGE_KEY_PREFIX = "calorieLog_";
+const SETTINGS_KEY = "calorieSettings";
+const GOAL_KEY = "calorieGoal";
+const API_KEY_KEY = "openaiApiKey";
+
+// ---- אלמנטים ----
+const els = {
+  totalCalories: document.getElementById("totalCalories"),
+  totalProtein: document.getElementById("totalProtein"),
+  totalCarbs: document.getElementById("totalCarbs"),
+  totalFat: document.getElementById("totalFat"),
+  goalInput: document.getElementById("goalInput"),
+  progressFill: document.getElementById("progressFill"),
+  remainingText: document.getElementById("remainingText"),
+  foodList: document.getElementById("foodList"),
+  emptyLog: document.getElementById("emptyLog"),
+  statusMsg: document.getElementById("statusMsg"),
+  textInput: document.getElementById("textInput"),
+  analyzeTextBtn: document.getElementById("analyzeTextBtn"),
+  photoInput: document.getElementById("photoInput"),
+  previewImg: document.getElementById("previewImg"),
+  uploadHint: document.getElementById("uploadHint"),
+  analyzePhotoBtn: document.getElementById("analyzePhotoBtn"),
+  clearDayBtn: document.getElementById("clearDayBtn"),
+  settingsBtn: document.getElementById("settingsBtn"),
+  settingsModal: document.getElementById("settingsModal"),
+  apiKeyInput: document.getElementById("apiKeyInput"),
+  saveSettingsBtn: document.getElementById("saveSettingsBtn"),
+  closeSettingsBtn: document.getElementById("closeSettingsBtn"),
+  searchInput: document.getElementById("searchInput"),
+  searchResults: document.getElementById("searchResults"),
+  chart: document.getElementById("chart"),
+  weekAvg: document.getElementById("weekAvg"),
+  exportBtn: document.getElementById("exportBtn"),
+  importBtn: document.getElementById("importBtn"),
+  importFile: document.getElementById("importFile"),
+};
+
+let selectedImageDataUrl = null;
+
+// ---- עזרי תאריך/אחסון ----
+function dateKey(d) {
+  return STORAGE_KEY_PREFIX + d.toISOString().slice(0, 10);
+}
+
+function todayKey() {
+  return dateKey(new Date());
+}
+
+function loadLog() {
+  try {
+    return JSON.parse(localStorage.getItem(todayKey())) || [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLog(log) {
+  localStorage.setItem(todayKey(), JSON.stringify(log));
+}
+
+function getApiKey() {
+  return localStorage.getItem(API_KEY_KEY) || "";
+}
+
+// ---- רינדור ----
+function render() {
+  const log = loadLog();
+  const totals = log.reduce(
+    (acc, item) => {
+      acc.calories += item.calories || 0;
+      acc.protein += item.protein || 0;
+      acc.carbs += item.carbs || 0;
+      acc.fat += item.fat || 0;
+      return acc;
+    },
+    { calories: 0, protein: 0, carbs: 0, fat: 0 }
+  );
+
+  els.totalCalories.textContent = Math.round(totals.calories);
+  els.totalProtein.textContent = Math.round(totals.protein);
+  els.totalCarbs.textContent = Math.round(totals.carbs);
+  els.totalFat.textContent = Math.round(totals.fat);
+
+  const goal = Number(els.goalInput.value) || 0;
+  const pct = goal > 0 ? Math.min((totals.calories / goal) * 100, 100) : 0;
+  els.progressFill.style.width = pct + "%";
+  els.progressFill.style.background =
+    totals.calories > goal && goal > 0 ? "#dc2626" : "#16a34a";
+
+  // צביעת הטבעת לפי אחוז
+  const ring = document.querySelector(".calorie-ring");
+  if (ring) {
+    const deg = (pct / 100) * 360;
+    ring.style.background = `conic-gradient(var(--primary) ${deg}deg, #e8f5e9 ${deg}deg)`;
+  }
+
+  if (goal > 0) {
+    const remaining = goal - totals.calories;
+    els.remainingText.textContent =
+      remaining >= 0
+        ? `נותרו ${Math.round(remaining)} קק"ל`
+        : `חריגה של ${Math.round(-remaining)} קק"ל`;
+  } else {
+    els.remainingText.textContent = "";
+  }
+
+  // רשימה
+  els.foodList.innerHTML = "";
+  els.emptyLog.hidden = log.length > 0;
+
+  log.forEach((item, idx) => {
+    const li = document.createElement("li");
+    li.className = "food-item";
+    li.innerHTML = `
+      <div class="food-info">
+        <strong></strong>
+        <small>ח: ${Math.round(item.protein || 0)}ג' · פ: ${Math.round(
+      item.carbs || 0
+    )}ג' · ש: ${Math.round(item.fat || 0)}ג'</small>
+      </div>
+      <span class="food-cal">${Math.round(item.calories || 0)} קק"ל</span>
+      <button class="remove-btn" data-idx="${idx}" title="הסרה">✕</button>
+    `;
+    li.querySelector("strong").textContent = item.name || "פריט";
+    els.foodList.appendChild(li);
+  });
+
+  renderChart();
+}
+
+// ---- גרף היסטוריה שבועית ----
+const DAY_NAMES = ["א'", "ב'", "ג'", "ד'", "ה'", "ו'", "ש'"];
+
+function caloriesForDate(d) {
+  try {
+    const log = JSON.parse(localStorage.getItem(dateKey(d))) || [];
+    return log.reduce((sum, it) => sum + (it.calories || 0), 0);
+  } catch {
+    return 0;
+  }
+}
+
+function renderChart() {
+  if (!els.chart) return;
+  const goal = Number(els.goalInput.value) || 0;
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days.push({ date: d, calories: caloriesForDate(d) });
+  }
+
+  const maxVal = Math.max(goal, ...days.map((d) => d.calories), 1);
+  const total = days.reduce((s, d) => s + d.calories, 0);
+  const daysWithData = days.filter((d) => d.calories > 0).length;
+  const avg = daysWithData ? Math.round(total / daysWithData) : 0;
+  els.weekAvg.textContent = avg ? `ממוצע: ${avg} קק"ל` : "";
+
+  els.chart.innerHTML = "";
+  days.forEach((d, idx) => {
+    const isToday = idx === days.length - 1;
+    const hPct = (d.calories / maxVal) * 100;
+    const over = goal > 0 && d.calories > goal;
+    const col = document.createElement("div");
+    col.className = "chart-bar" + (isToday ? " today" : "");
+    col.innerHTML = `
+      <span class="bar-val">${d.calories ? Math.round(d.calories) : ""}</span>
+      <div class="bar ${over ? "over" : ""}" style="height:${hPct}%"></div>
+      <span class="bar-day">${DAY_NAMES[d.date.getDay()]}</span>
+    `;
+    els.chart.appendChild(col);
+  });
+}
+
+// ---- חיפוש במאגר המזון ----
+function renderSearchResults(query) {
+  const q = (query || "").trim();
+  els.searchResults.innerHTML = "";
+  const list = q
+    ? FOOD_DB.filter((f) => f.name.includes(q))
+    : FOOD_DB.slice(0, 12);
+
+  if (q && list.length === 0) {
+    const li = document.createElement("li");
+    li.className = "empty";
+    li.textContent = "לא נמצאו תוצאות במאגר.";
+    els.searchResults.appendChild(li);
+    return;
+  }
+
+  list.forEach((food) => {
+    const li = document.createElement("li");
+    li.className = "search-result";
+    li.innerHTML = `
+      <div class="sr-info">
+        <strong></strong>
+        <small></small>
+      </div>
+      <div class="sr-qty">
+        <button class="qty-btn qty-minus" title="פחות">−</button>
+        <input type="number" class="qty-input" value="1" min="0.25" step="0.25" />
+        <button class="qty-btn qty-plus" title="עוד">+</button>
+      </div>
+      <span class="sr-cal">${food.calories} קק"ל</span>
+      <button class="sr-add" title="הוספה">+</button>
+    `;
+    li.querySelector("strong").textContent = food.name;
+    li.querySelector("small").textContent = food.unit;
+
+    const qtyInput = li.querySelector(".qty-input");
+    const calSpan = li.querySelector(".sr-cal");
+    const getQty = () => Math.max(Number(qtyInput.value) || 0, 0);
+
+    const updateCal = () => {
+      calSpan.textContent = `${Math.round(food.calories * getQty())} קק"ל`;
+    };
+    li.querySelector(".qty-minus").addEventListener("click", (e) => {
+      e.stopPropagation();
+      qtyInput.value = Math.max(getQty() - 0.25, 0.25);
+      updateCal();
+    });
+    li.querySelector(".qty-plus").addEventListener("click", (e) => {
+      e.stopPropagation();
+      qtyInput.value = getQty() + 0.25;
+      updateCal();
+    });
+    qtyInput.addEventListener("input", updateCal);
+    qtyInput.addEventListener("click", (e) => e.stopPropagation());
+
+    const add = () => {
+      const q = getQty();
+      if (q <= 0) return;
+      const qtyLabel = q === 1 ? food.unit : `${q} × ${food.unit}`;
+      addItem({
+        name: `${food.name} (${qtyLabel})`,
+        calories: food.calories * q,
+        protein: food.protein * q,
+        carbs: food.carbs * q,
+        fat: food.fat * q,
+      });
+      setStatus(`נוסף: ${food.name}`, "");
+    };
+    li.querySelector(".sr-add").addEventListener("click", (e) => {
+      e.stopPropagation();
+      add();
+    });
+    li.addEventListener("click", add);
+    els.searchResults.appendChild(li);
+  });
+}
+
+// ---- הוספה/הסרה ----
+function addItem(item) {
+  const log = loadLog();
+  log.push(item);
+  saveLog(log);
+  render();
+}
+
+function removeItem(idx) {
+  const log = loadLog();
+  log.splice(idx, 1);
+  saveLog(log);
+  render();
+}
+
+// ---- סטטוס ----
+function setStatus(msg, type = "") {
+  els.statusMsg.textContent = msg;
+  els.statusMsg.className = "status" + (type ? " " + type : "");
+}
+
+// ---- קריאה ל-OpenAI ----
+const SYSTEM_PROMPT = `אתה תזונאי שמעריך ערכים תזונתיים של מנות אוכל.
+החזר אך ורק JSON תקין במבנה הבא, ללא טקסט נוסף וללא סימוני קוד:
+{"name":"שם המנה בעברית","calories":מספר,"protein":מספר,"carbs":מספר,"fat":מספר}
+הערכים הם לכל המנה שתוארה (לא ל-100 גרם). אם יש כמה פריטים סכם אותם יחד.`;
+
+async function callOpenAI(messages) {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    throw new Error("חסר מפתח API. פתחו את ההגדרות (⚙️) והזינו מפתח OpenAI.");
+  }
+
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "gpt-4o",
+      messages,
+      max_tokens: 300,
+      temperature: 0.2,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `שגיאת שרת (${res.status})`);
+  }
+
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || "";
+}
+
+function parseNutrition(raw) {
+  // ניקוי גדרות קוד אם קיימות
+  const cleaned = raw.replace(/```json|```/g, "").trim();
+  const match = cleaned.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error("לא התקבל מידע תזונתי תקין.");
+  const obj = JSON.parse(match[0]);
+  return {
+    name: obj.name || "פריט",
+    calories: Number(obj.calories) || 0,
+    protein: Number(obj.protein) || 0,
+    carbs: Number(obj.carbs) || 0,
+    fat: Number(obj.fat) || 0,
+  };
+}
+
+// ---- ניתוח טקסט ----
+async function analyzeText() {
+  const text = els.textInput.value.trim();
+  if (!text) {
+    setStatus("הזינו תיאור של המזון.", "error");
+    return;
+  }
+
+  // ללא מפתח API -> ניתוח מקומי חינמי מול מאגר המזון
+  if (!getApiKey()) {
+    const items = analyzeTextLocally(text);
+    if (items.length === 0) {
+      setStatus(
+        'לא זוהה מזון מהמאגר. נסו ניסוח פשוט יותר (למשל "2 ביצים ופרוסת לחם"), או הזינו מפתח API לניתוח חכם.',
+        "error"
+      );
+      return;
+    }
+    items.forEach(addItem);
+    els.textInput.value = "";
+    const totalCal = items.reduce((s, i) => s + i.calories, 0);
+    setStatus(
+      `נוספו ${items.length} פריטים (${Math.round(totalCal)} קק"ל) — ניתוח מקומי ללא מפתח.`,
+      ""
+    );
+    return;
+  }
+
+  els.analyzeTextBtn.disabled = true;
+  setStatus("מנתח...", "loading");
+  try {
+    const raw = await callOpenAI([
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: `הערך את הערכים התזונתיים של: ${text}` },
+    ]);
+    const item = parseNutrition(raw);
+    addItem(item);
+    els.textInput.value = "";
+    setStatus(`נוסף: ${item.name} (${Math.round(item.calories)} קק"ל)`, "");
+  } catch (e) {
+    setStatus(e.message, "error");
+  } finally {
+    els.analyzeTextBtn.disabled = false;
+  }
+}
+
+// ---- ניתוח תמונה ----
+async function analyzePhoto() {
+  if (!selectedImageDataUrl) {
+    setStatus("בחרו תמונה תחילה.", "error");
+    return;
+  }
+  els.analyzePhotoBtn.disabled = true;
+  setStatus("מנתח את התמונה...", "loading");
+  try {
+    const raw = await callOpenAI([
+      { role: "system", content: SYSTEM_PROMPT },
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "מהם הערכים התזונתיים של המנה בתמונה?" },
+          { type: "image_url", image_url: { url: selectedImageDataUrl } },
+        ],
+      },
+    ]);
+    const item = parseNutrition(raw);
+    addItem(item);
+    setStatus(`נוסף: ${item.name} (${Math.round(item.calories)} קק"ל)`, "");
+    resetPhoto();
+  } catch (e) {
+    setStatus(e.message, "error");
+  } finally {
+    els.analyzePhotoBtn.disabled = !selectedImageDataUrl;
+  }
+}
+
+function resetPhoto() {
+  selectedImageDataUrl = null;
+  els.previewImg.hidden = true;
+  els.previewImg.src = "";
+  els.uploadHint.hidden = false;
+  els.analyzePhotoBtn.disabled = true;
+  els.photoInput.value = "";
+}
+
+// ---- ייצוא / ייבוא גיבוי ----
+function exportData() {
+  const data = { version: 1, exportedAt: new Date().toISOString(), days: {}, goal: null };
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith(STORAGE_KEY_PREFIX)) {
+      data.days[key] = JSON.parse(localStorage.getItem(key));
+    }
+  }
+  data.goal = localStorage.getItem(GOAL_KEY);
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `calorie-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  setStatus("הגיבוי יוצא בהצלחה.", "");
+}
+
+function importData(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (!data || typeof data.days !== "object") {
+        throw new Error("קובץ גיבוי לא תקין.");
+      }
+      if (!confirm("ייבוא יחליף את כל הנתונים הקיימים. להמשיך?")) return;
+
+      // מחיקת יומנים קיימים
+      Object.keys(localStorage)
+        .filter((k) => k.startsWith(STORAGE_KEY_PREFIX))
+        .forEach((k) => localStorage.removeItem(k));
+
+      // טעינת היומנים מהגיבוי
+      Object.entries(data.days).forEach(([key, value]) => {
+        if (key.startsWith(STORAGE_KEY_PREFIX) && Array.isArray(value)) {
+          localStorage.setItem(key, JSON.stringify(value));
+        }
+      });
+      if (data.goal) {
+        localStorage.setItem(GOAL_KEY, data.goal);
+        els.goalInput.value = data.goal;
+      }
+      render();
+      setStatus("הגיבוי יובא בהצלחה.", "");
+    } catch (e) {
+      setStatus(e.message || "שגיאה בקריאת הקובץ.", "error");
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ---- אירועים ----
+function initEvents() {
+  // טאבים
+  document.querySelectorAll(".tab").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+      document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
+      tab.classList.add("active");
+      document.getElementById("panel-" + tab.dataset.tab).classList.add("active");
+      setStatus("");
+      if (tab.dataset.tab === "search") renderSearchResults(els.searchInput.value);
+    });
+  });
+
+  els.analyzeTextBtn.addEventListener("click", analyzeText);
+  els.analyzePhotoBtn.addEventListener("click", analyzePhoto);
+
+  // חיפוש במאגר
+  els.searchInput.addEventListener("input", () =>
+    renderSearchResults(els.searchInput.value)
+  );
+
+  // העלאת תמונה
+  els.photoInput.addEventListener("change", (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      selectedImageDataUrl = reader.result;
+      els.previewImg.src = selectedImageDataUrl;
+      els.previewImg.hidden = false;
+      els.uploadHint.hidden = true;
+      els.analyzePhotoBtn.disabled = false;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // יעד
+  els.goalInput.addEventListener("input", () => {
+    localStorage.setItem(GOAL_KEY, els.goalInput.value);
+    render();
+  });
+
+  // הסרת פריט
+  els.foodList.addEventListener("click", (e) => {
+    const btn = e.target.closest(".remove-btn");
+    if (btn) removeItem(Number(btn.dataset.idx));
+  });
+
+  // ניקוי יום
+  els.clearDayBtn.addEventListener("click", () => {
+    if (confirm("לנקות את כל היומן של היום?")) {
+      saveLog([]);
+      render();
+    }
+  });
+
+  // הגדרות
+  els.settingsBtn.addEventListener("click", () => {
+    els.apiKeyInput.value = getApiKey();
+    els.settingsModal.hidden = false;
+  });
+  els.closeSettingsBtn.addEventListener("click", () => {
+    els.settingsModal.hidden = true;
+  });
+  els.saveSettingsBtn.addEventListener("click", () => {
+    localStorage.setItem(API_KEY_KEY, els.apiKeyInput.value.trim());
+    els.settingsModal.hidden = true;
+    setStatus("המפתח נשמר.", "");
+  });
+  els.settingsModal.addEventListener("click", (e) => {
+    if (e.target === els.settingsModal) els.settingsModal.hidden = true;
+  });
+
+  // ייצוא / ייבוא גיבוי
+  els.exportBtn.addEventListener("click", exportData);
+  els.importBtn.addEventListener("click", () => els.importFile.click());
+  els.importFile.addEventListener("change", (e) => {
+    const file = e.target.files?.[0];
+    if (file) importData(file);
+    els.importFile.value = "";
+  });
+}
+
+// ---- אתחול ----
+function init() {
+  const savedGoal = localStorage.getItem(GOAL_KEY);
+  if (savedGoal) els.goalInput.value = savedGoal;
+  initEvents();
+  renderSearchResults("");
+  render();
+
+  // רישום Service Worker לתמיכה לא-מקוונת (PWA)
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+    });
+  }
+}
+
+document.addEventListener("DOMContentLoaded", init);
