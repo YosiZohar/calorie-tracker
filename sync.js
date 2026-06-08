@@ -4,12 +4,12 @@
 
 // 👇👇👇 הדבק כאן את ההגדרות מפרויקט ה-Firebase שלך (פעם אחת) 👇👇👇
 const FIREBASE_CONFIG = {
-  apiKey: "PASTE_API_KEY",
-  authDomain: "PASTE_PROJECT.firebaseapp.com",
-  projectId: "PASTE_PROJECT_ID",
-  storageBucket: "PASTE_PROJECT.appspot.com",
-  messagingSenderId: "PASTE_SENDER_ID",
-  appId: "PASTE_APP_ID",
+  apiKey: "AIzaSyAE-e6EOBJdmyA325FN5HcLVIed9h918E0",
+  authDomain: "calorie-tracker-13b61.firebaseapp.com",
+  projectId: "calorie-tracker-13b61",
+  storageBucket: "calorie-tracker-13b61.firebasestorage.app",
+  messagingSenderId: "497951059833",
+  appId: "1:497951059833:web:e49671f5774a75546249a8",
 };
 // 👆👆👆 עד כאן ההגדרות של Firebase 👆👆👆
 
