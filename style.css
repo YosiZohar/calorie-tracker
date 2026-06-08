@@ -132,6 +132,24 @@ body {
 .macro { text-align: center; }
 .macro strong { display: block; font-size: 1.2rem; color: var(--text); }
 .macro span { font-size: 0.8rem; color: var(--muted); }
+.macro-goal { font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+.macro-bar {
+  width: 100%;
+  height: 5px;
+  background: #e8f5e9;
+  border-radius: 3px;
+  margin-top: 6px;
+  overflow: hidden;
+}
+.macro-bar[hidden] { display: none; }
+.macro-bar-fill {
+  height: 100%;
+  width: 0;
+  background: var(--primary);
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+.protein-macro { min-width: 90px; }
 
 /* הוספת מזון */
 .add-food h2, .log h2 { font-size: 1.1rem; margin-bottom: 14px; }

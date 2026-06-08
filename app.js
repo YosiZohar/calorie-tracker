@@ -12,6 +12,8 @@ const els = {
   totalProtein: document.getElementById("totalProtein"),
   totalCarbs: document.getElementById("totalCarbs"),
   totalFat: document.getElementById("totalFat"),
+  proteinGoalText: document.getElementById("proteinGoalText"),
+  proteinBar: document.getElementById("proteinBar"),
   goalInput: document.getElementById("goalInput"),
   progressFill: document.getElementById("progressFill"),
   remainingText: document.getElementById("remainingText"),
@@ -108,6 +110,20 @@ function render() {
   els.totalProtein.textContent = Math.round(totals.protein);
   els.totalCarbs.textContent = Math.round(totals.carbs);
   els.totalFat.textContent = Math.round(totals.fat);
+
+  // יעד חלבון (מהפרופיל) מול הצריכה בפועל
+  const proteinGoal = Number(localStorage.getItem("proteinGoal")) || 0;
+  if (els.proteinGoalText && els.proteinBar) {
+    if (proteinGoal > 0) {
+      els.proteinGoalText.textContent = ` / ${proteinGoal}`;
+      const pPct = Math.min((totals.protein / proteinGoal) * 100, 100);
+      els.proteinBar.style.width = pPct + "%";
+      els.proteinBar.parentElement.hidden = false;
+    } else {
+      els.proteinGoalText.textContent = "";
+      els.proteinBar.parentElement.hidden = true;
+    }
+  }
 
   const goal = Number(els.goalInput.value) || 0;
   const pct = goal > 0 ? Math.min((totals.calories / goal) * 100, 100) : 0;
@@ -733,6 +749,7 @@ function computeProfile() {
   const proteinBase = p.target && p.target < p.weight ? p.target : p.weight;
   const proteinG = Math.round(proteinBase * 1.6);
   els.prProtein.textContent = `${proteinG} גרם`;
+  localStorage.setItem("proteinGoal", String(proteinG));
 
   els.prMaintain.textContent = `${maintain} קק"ל`;
   els.prRecommend.textContent = `${recommend} קק"ל`;
@@ -746,6 +763,7 @@ function computeProfile() {
 function onProfileChange() {
   saveProfile(readProfileInputs());
   computeProfile();
+  render();
 }
 
 function toggleProfile() {
