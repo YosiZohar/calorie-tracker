@@ -52,10 +52,12 @@ const els = {
   profileHeight: document.getElementById("profileHeight"),
   profileSteps: document.getElementById("profileSteps"),
   profileTarget: document.getElementById("profileTarget"),
+  profileRate: document.getElementById("profileRate"),
   profileResult: document.getElementById("profileResult"),
   prMaintain: document.getElementById("prMaintain"),
   prRecommend: document.getElementById("prRecommend"),
   prGoalLabel: document.getElementById("prGoalLabel"),
+  prProtein: document.getElementById("prProtein"),
   prNote: document.getElementById("prNote"),
   applyGoalBtn: document.getElementById("applyGoalBtn"),
 };
@@ -619,6 +621,7 @@ function initEvents() {
     els.profileHeight,
     els.profileSteps,
     els.profileTarget,
+    els.profileRate,
   ].forEach((el) =>
     el?.addEventListener("input", onProfileChange)
   );
@@ -657,6 +660,7 @@ function readProfileInputs() {
     height: Number(els.profileHeight.value) || 0,
     steps: Number(els.profileSteps.value) || 0,
     target: Number(els.profileTarget.value) || 0,
+    rate: els.profileRate?.value || "medium",
   };
 }
 
@@ -667,6 +671,7 @@ function fillProfileInputs(p) {
   if (p.height) els.profileHeight.value = p.height;
   if (p.steps != null && p.steps !== 0) els.profileSteps.value = p.steps;
   if (p.target) els.profileTarget.value = p.target;
+  if (p.rate && els.profileRate) els.profileRate.value = p.rate;
 }
 
 // רמת פעילות לפי צעדים יומיים -> מקדם
@@ -698,24 +703,36 @@ function computeProfile() {
   let note = 'כמות זו שומרת על המשקל הנוכחי שלך.';
   let goalLabel = "קלוריות מומלצות ליום";
 
+  // מקדמי קצב: קק"ל ליום לפי קצב שינוי מבוקש (~7700 קק"ל = 1 ק"ג)
+  const rateMap = { slow: 275, medium: 500, fast: 825 };
+  const rateLabel = { slow: "0.25", medium: "0.5", fast: "0.75" };
+  const delta = rateMap[p.rate] || 500;
+  const ratePerWeek = rateLabel[p.rate] || "0.5";
+
   if (p.target && p.weight) {
     const diff = Math.round((p.target - p.weight) * 10) / 10;
     if (Math.abs(diff) >= 0.5) {
       if (diff < 0) {
-        // ירידה במשקל: גירעון ~500 קק"ל (כ-0.5 ק"ג בשבוע)
-        recommend = maintain - 500;
+        // ירידה במשקל: גירעון לפי קצב
+        recommend = maintain - delta;
         const floor = p.sex === "female" ? 1200 : 1500;
         if (recommend < floor) recommend = floor;
         goalLabel = "קלוריות לירידה במשקל";
-        note = `ליעד ${p.target} ק"ג (ירידה של ${Math.abs(diff)} ק"ג) — גירעון של כ-500 קק"ל ליום, כ-0.5 ק"ג בשבוע.`;
+        note = `ליעד ${p.target} ק"ג (ירידה של ${Math.abs(diff)} ק"ג) — גירעון של כ-${delta} קק"ל ליום, כ-${ratePerWeek} ק"ג בשבוע.`;
       } else {
-        // עלייה במשקל: עודף ~300 קק"ל
-        recommend = maintain + 300;
+        // עלייה במשקל: עודף (מחצית מהקצב כדי להגביר מסת שריר)
+        const surplus = Math.round((delta / 2) / 25) * 25;
+        recommend = maintain + surplus;
         goalLabel = "קלוריות לעלייה במשקל";
-        note = `ליעד ${p.target} ק"ג (עלייה של ${diff} ק"ג) — עודף של כ-300 קק"ל ליום.`;
+        note = `ליעד ${p.target} ק"ג (עלייה של ${diff} ק"ג) — עודף של כ-${surplus} קק"ל ליום.`;
       }
     }
   }
+
+  // יעד חלבון: ~1.6 גרם לק"ג משקל (יעד אם הוגדר, אחרת משקל נוכחי)
+  const proteinBase = p.target && p.target < p.weight ? p.target : p.weight;
+  const proteinG = Math.round(proteinBase * 1.6);
+  els.prProtein.textContent = `${proteinG} גרם`;
 
   els.prMaintain.textContent = `${maintain} קק"ל`;
   els.prRecommend.textContent = `${recommend} קק"ל`;
