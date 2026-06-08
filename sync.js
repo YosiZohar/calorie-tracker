@@ -53,6 +53,7 @@ function collectLocalData() {
   return {
     days,
     goal: localStorage.getItem(SYNC_GOAL_KEY) || null,
+    profile: localStorage.getItem("calorieProfile") || null,
     updatedAt: Date.now(),
   };
 }
@@ -71,6 +72,7 @@ function applyRemoteData(data) {
       }
     });
     if (data.goal) localStorage.setItem(SYNC_GOAL_KEY, data.goal);
+    if (data.profile) localStorage.setItem("calorieProfile", data.profile);
     if (typeof window.onCloudData === "function") window.onCloudData();
   } finally {
     _applyingRemote = false;

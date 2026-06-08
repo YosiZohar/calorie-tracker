@@ -43,6 +43,21 @@ const els = {
   loginBtn: document.getElementById("loginBtn"),
   skipLoginBtn: document.getElementById("skipLoginBtn"),
   userBadge: document.getElementById("userBadge"),
+  profileToggle: document.getElementById("profileToggle"),
+  profileChevron: document.getElementById("profileChevron"),
+  profileBody: document.getElementById("profileBody"),
+  profileSex: document.getElementById("profileSex"),
+  profileAge: document.getElementById("profileAge"),
+  profileWeight: document.getElementById("profileWeight"),
+  profileHeight: document.getElementById("profileHeight"),
+  profileSteps: document.getElementById("profileSteps"),
+  profileTarget: document.getElementById("profileTarget"),
+  profileResult: document.getElementById("profileResult"),
+  prMaintain: document.getElementById("prMaintain"),
+  prRecommend: document.getElementById("prRecommend"),
+  prGoalLabel: document.getElementById("prGoalLabel"),
+  prNote: document.getElementById("prNote"),
+  applyGoalBtn: document.getElementById("applyGoalBtn"),
 };
 
 let selectedImageDataUrl = null;
@@ -594,6 +609,132 @@ function initEvents() {
   els.userBadge?.addEventListener("click", () => {
     if (confirm("להתנתק ולהחליף משתמש?")) logout();
   });
+
+  // פרופיל
+  els.profileToggle?.addEventListener("click", toggleProfile);
+  [
+    els.profileSex,
+    els.profileAge,
+    els.profileWeight,
+    els.profileHeight,
+    els.profileSteps,
+    els.profileTarget,
+  ].forEach((el) =>
+    el?.addEventListener("input", onProfileChange)
+  );
+  els.applyGoalBtn?.addEventListener("click", () => {
+    const cal = Number(els.applyGoalBtn.dataset.cal) || 0;
+    if (!cal) return;
+    els.goalInput.value = cal;
+    localStorage.setItem(GOAL_KEY, String(cal));
+    window.CloudSync?.pushSoon();
+    render();
+    setStatus(`היעד היומי עודכן ל-${cal} קק"ל.`, "");
+  });
+}
+
+// ---- פרופיל ----
+const PROFILE_KEY = "calorieProfile";
+
+function loadProfile() {
+  try {
+    return JSON.parse(localStorage.getItem(PROFILE_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function saveProfile(p) {
+  localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
+  window.CloudSync?.pushSoon();
+}
+
+function readProfileInputs() {
+  return {
+    sex: els.profileSex.value,
+    age: Number(els.profileAge.value) || 0,
+    weight: Number(els.profileWeight.value) || 0,
+    height: Number(els.profileHeight.value) || 0,
+    steps: Number(els.profileSteps.value) || 0,
+    target: Number(els.profileTarget.value) || 0,
+  };
+}
+
+function fillProfileInputs(p) {
+  if (p.sex) els.profileSex.value = p.sex;
+  if (p.age) els.profileAge.value = p.age;
+  if (p.weight) els.profileWeight.value = p.weight;
+  if (p.height) els.profileHeight.value = p.height;
+  if (p.steps != null && p.steps !== 0) els.profileSteps.value = p.steps;
+  if (p.target) els.profileTarget.value = p.target;
+}
+
+// רמת פעילות לפי צעדים יומיים -> מקדם
+function activityFactor(steps) {
+  if (steps < 5000) return 1.2; // יושבני
+  if (steps < 7500) return 1.375; // פעילות קלה
+  if (steps < 10000) return 1.55; // פעילות בינונית
+  if (steps < 12500) return 1.725; // פעילות גבוהה
+  return 1.9; // פעילות גבוהה מאוד
+}
+
+// חישוב והצגת המלצה קלורית
+function computeProfile() {
+  const p = readProfileInputs();
+  if (!p.age || !p.weight || !p.height) {
+    els.profileResult.hidden = true;
+    return null;
+  }
+
+  // BMR לפי Mifflin-St Jeor
+  const bmr =
+    10 * p.weight +
+    6.25 * p.height -
+    5 * p.age +
+    (p.sex === "female" ? -161 : 5);
+  const maintain = Math.round(bmr * activityFactor(p.steps));
+
+  let recommend = maintain;
+  let note = 'כמות זו שומרת על המשקל הנוכחי שלך.';
+  let goalLabel = "קלוריות מומלצות ליום";
+
+  if (p.target && p.weight) {
+    const diff = Math.round((p.target - p.weight) * 10) / 10;
+    if (Math.abs(diff) >= 0.5) {
+      if (diff < 0) {
+        // ירידה במשקל: גירעון ~500 קק"ל (כ-0.5 ק"ג בשבוע)
+        recommend = maintain - 500;
+        const floor = p.sex === "female" ? 1200 : 1500;
+        if (recommend < floor) recommend = floor;
+        goalLabel = "קלוריות לירידה במשקל";
+        note = `ליעד ${p.target} ק"ג (ירידה של ${Math.abs(diff)} ק"ג) — גירעון של כ-500 קק"ל ליום, כ-0.5 ק"ג בשבוע.`;
+      } else {
+        // עלייה במשקל: עודף ~300 קק"ל
+        recommend = maintain + 300;
+        goalLabel = "קלוריות לעלייה במשקל";
+        note = `ליעד ${p.target} ק"ג (עלייה של ${diff} ק"ג) — עודף של כ-300 קק"ל ליום.`;
+      }
+    }
+  }
+
+  els.prMaintain.textContent = `${maintain} קק"ל`;
+  els.prRecommend.textContent = `${recommend} קק"ל`;
+  els.prGoalLabel.textContent = goalLabel;
+  els.prNote.textContent = note;
+  els.profileResult.hidden = false;
+  els.applyGoalBtn.dataset.cal = recommend;
+  return { ...p, maintain, recommend };
+}
+
+function onProfileChange() {
+  saveProfile(readProfileInputs());
+  computeProfile();
+}
+
+function toggleProfile() {
+  const open = els.profileBody.hidden;
+  els.profileBody.hidden = !open;
+  els.profileChevron.textContent = open ? "▲" : "▼";
 }
 
 // ---- כניסת משתמש ----
@@ -659,11 +800,15 @@ function init() {
   initEvents();
   renderSearchResults("");
   render();
+  fillProfileInputs(loadProfile());
+  computeProfile();
 
   // עדכון התצוגה כאשר מגיעים נתונים מהענן (ממכשיר אחר)
   window.onCloudData = () => {
     const g = localStorage.getItem(GOAL_KEY);
     if (g) els.goalInput.value = g;
+    fillProfileInputs(loadProfile());
+    computeProfile();
     render();
   };
 

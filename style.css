@@ -323,6 +323,63 @@ textarea {
 }
 .user-badge[hidden] { display: none; }
 
+/* פרופיל ויעד */
+.profile-toggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: none;
+  border: none;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text, #1f2937);
+  cursor: pointer;
+  padding: 0;
+}
+.profile-toggle .chevron { font-size: 0.8rem; color: var(--muted); }
+.profile-body { margin-top: 14px; }
+.profile-body[hidden] { display: none; }
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+.profile-grid .field { display: flex; flex-direction: column; }
+.profile-grid label { font-size: 0.85rem; margin-bottom: 4px; color: var(--muted); }
+.profile-grid input,
+.profile-grid select {
+  padding: 9px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 1rem;
+  width: 100%;
+}
+.profile-result {
+  margin-top: 16px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  padding: 14px;
+}
+.profile-result[hidden] { display: none; }
+.pr-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 0.95rem;
+}
+.pr-row.primary {
+  border-top: 1px dashed #bbf7d0;
+  margin-top: 6px;
+  padding-top: 10px;
+  font-weight: 700;
+}
+.pr-row.primary strong { color: var(--primary-dark); font-size: 1.25rem; }
+.pr-note { font-size: 0.82rem; color: var(--muted); margin: 8px 0 12px; }
+.profile-result .primary-btn { width: 100%; margin-top: 0; }
+
 /* חיפוש במאגר */
 .search-input {
   width: 100%;
