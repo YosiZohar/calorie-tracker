@@ -277,6 +277,52 @@ textarea {
 .modal-actions { display: flex; gap: 10px; align-items: center; }
 .modal-actions .primary-btn { margin-top: 0; flex: 1; }
 
+/* מסך כניסה */
+.login-screen {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(160deg, #16a34a, #065f46);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 200;
+}
+.login-screen[hidden] { display: none; }
+.login-card {
+  width: 100%;
+  max-width: 380px;
+  text-align: center;
+}
+.login-card h1 { font-size: 1.5rem; margin-bottom: 6px; }
+.login-sub { color: var(--muted); font-size: 0.95rem; margin-bottom: 18px; }
+.login-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 1.05rem;
+  text-align: center;
+  margin-bottom: 12px;
+}
+.login-card .primary-btn { width: 100%; margin-top: 0; }
+.login-card .text-btn { margin-top: 12px; display: block; width: 100%; }
+.login-hint { font-size: 0.78rem; color: var(--muted); margin-top: 14px; }
+
+/* תג משתמש בכותרת */
+.user-badge {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  align-self: center;
+}
+.user-badge[hidden] { display: none; }
+
 /* חיפוש במאגר */
 .search-input {
   width: 100%;

@@ -38,6 +38,11 @@ const els = {
   exportBtn: document.getElementById("exportBtn"),
   importBtn: document.getElementById("importBtn"),
   importFile: document.getElementById("importFile"),
+  loginScreen: document.getElementById("loginScreen"),
+  loginUserInput: document.getElementById("loginUserInput"),
+  loginBtn: document.getElementById("loginBtn"),
+  skipLoginBtn: document.getElementById("skipLoginBtn"),
+  userBadge: document.getElementById("userBadge"),
 };
 
 let selectedImageDataUrl = null;
@@ -543,6 +548,7 @@ function initEvents() {
     const newCode = (els.syncCodeInput?.value || "").trim();
     localStorage.setItem("syncCode", newCode);
     els.settingsModal.hidden = true;
+    updateUserBadge();
     if (newCode !== prevCode) {
       if (newCode && window.CloudSync?.isConfigured()) {
         setStatus("מתחבר לסנכרון...", "loading");
@@ -572,6 +578,78 @@ function initEvents() {
     if (file) importData(file);
     els.importFile.value = "";
   });
+
+  // כניסת משתמש
+  els.loginBtn?.addEventListener("click", () =>
+    loginAs(els.loginUserInput.value)
+  );
+  els.loginUserInput?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") loginAs(els.loginUserInput.value);
+  });
+  els.skipLoginBtn?.addEventListener("click", () => {
+    localStorage.setItem(SKIP_LOGIN_KEY, "1");
+    hideLogin();
+    setStatus("שימוש מקומי בלבד. ניתן להתחבר בכל עת מההגדרות ⚙️.", "");
+  });
+  els.userBadge?.addEventListener("click", () => {
+    if (confirm("להתנתק ולהחליף משתמש?")) logout();
+  });
+}
+
+// ---- כניסת משתמש ----
+const SKIP_LOGIN_KEY = "skipLogin";
+
+function currentUser() {
+  return (localStorage.getItem("syncCode") || "").trim();
+}
+
+function updateUserBadge() {
+  if (!els.userBadge) return;
+  const user = currentUser();
+  if (user) {
+    els.userBadge.textContent = "👤 " + user;
+    els.userBadge.hidden = false;
+    els.userBadge.title = "התנתקות / החלפת משתמש";
+  } else {
+    els.userBadge.hidden = true;
+  }
+}
+
+function showLogin() {
+  if (els.loginScreen) els.loginScreen.hidden = false;
+}
+
+function hideLogin() {
+  if (els.loginScreen) els.loginScreen.hidden = true;
+}
+
+function loginAs(name) {
+  const user = (name || "").trim();
+  if (!user) {
+    if (els.loginUserInput) els.loginUserInput.focus();
+    return;
+  }
+  localStorage.setItem("syncCode", user);
+  localStorage.removeItem(SKIP_LOGIN_KEY);
+  updateUserBadge();
+  hideLogin();
+  if (window.CloudSync?.isConfigured()) {
+    setStatus("מתחבר כ-" + user + "...", "loading");
+    window.CloudSync.start().then((r) => {
+      if (r.ok)
+        setStatus("שלום " + user + "! הנתונים מסונכרנים בכל המכשירים.", "");
+      else setStatus("ההתחברות לסנכרון נכשלה (הנתונים נשמרים מקומית).", "error");
+    });
+  }
+}
+
+function logout() {
+  window.CloudSync?.stop();
+  localStorage.removeItem("syncCode");
+  localStorage.removeItem(SKIP_LOGIN_KEY);
+  updateUserBadge();
+  if (els.loginUserInput) els.loginUserInput.value = "";
+  showLogin();
 }
 
 // ---- אתחול ----
@@ -592,6 +670,15 @@ function init() {
   // הפעלת סנכרון ענן אם הוגדר קוד סנכרון
   if (window.CloudSync?.getCode() && window.CloudSync?.isConfigured()) {
     window.CloudSync.start();
+  }
+
+  // מסך כניסה: מוצג אם אין משתמש מחובר ולא נבחר "המשך ללא כניסה"
+  updateUserBadge();
+  if (!currentUser() && !localStorage.getItem(SKIP_LOGIN_KEY)) {
+    showLogin();
+    els.loginUserInput?.focus();
+  } else {
+    hideLogin();
   }
 
   // רישום Service Worker לתמיכה לא-מקוונת (PWA)

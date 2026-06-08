@@ -11,9 +11,23 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- מסך כניסה -->
+  <div id="loginScreen" class="login-screen" hidden>
+    <div class="login-card card">
+      <h1>🍎 מעקב קלוריות יומי</h1>
+      <p class="login-sub">הזינו שם משתמש כדי שהנתונים יסתנכרנו בכל המכשירים שלכם.</p>
+      <input type="text" id="loginUserInput" class="login-input"
+        placeholder="שם משתמש (למשל: yosi)" autocomplete="username" />
+      <button id="loginBtn" class="primary-btn">כניסה</button>
+      <button id="skipLoginBtn" class="text-btn">המשך ללא כניסה (מקומי בלבד)</button>
+      <p class="login-hint">בחרו שם ייחודי שרק אתם מכירים — הוא מזהה את הנתונים שלכם.</p>
+    </div>
+  </div>
+
   <header class="app-header">
     <h1>🍎 מעקב קלוריות יומי</h1>
     <div class="header-actions">
+      <span id="userBadge" class="user-badge" hidden></span>
       <button id="exportBtn" class="icon-btn" title="ייצוא גיבוי">⬇️</button>
       <button id="importBtn" class="icon-btn" title="ייבוא גיבוי">⬆️</button>
       <button id="settingsBtn" class="icon-btn" title="הגדרות">⚙️</button>
