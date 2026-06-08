@@ -111,6 +111,11 @@
   <div id="settingsModal" class="modal" hidden>
     <div class="modal-content card">
       <h2>הגדרות</h2>
+
+      <label for="syncCodeInput">קוד סנכרון בין מכשירים <span class="opt-tag">אופציונלי</span></label>
+      <input type="text" id="syncCodeInput" placeholder="למשל: yosi-2026-xk39" autocomplete="off" />
+      <p class="hint">הזינו את אותו קוד בכל מכשיר (טלפון, מחשב) כדי שהנתונים יופיעו ויתעדכנו אוטומטית בכל מקום. בחרו קוד ארוך וייחודי שרק אתם מכירים.</p>
+
       <label for="apiKeyInput">מפתח OpenAI API <span class="opt-tag">אופציונלי</span></label>
       <input type="password" id="apiKeyInput" placeholder="sk-..." />
       <p class="hint">האפליקציה עובדת חינם ללא מפתח. המפתח דרוש רק לניתוח תמונות או לניתוח טקסט חכם יותר, ונשמר רק בדפדפן שלך.</p>
@@ -122,6 +127,7 @@
   </div>
 
   <script src="foods.js"></script>
+  <script src="sync.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

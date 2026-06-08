@@ -1,12 +1,13 @@
 // ===== Service Worker =====
 // מאפשר עבודה לא מקוונת ע"י cache של קבצי האפליקציה.
-const CACHE_NAME = "calorie-tracker-v2";
+const CACHE_NAME = "calorie-tracker-v3";
 const ASSETS = [
   "./",
   "./index.html",
   "./style.css",
   "./app.js",
   "./foods.js",
+  "./sync.js",
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png",

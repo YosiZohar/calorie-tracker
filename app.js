@@ -28,6 +28,7 @@ const els = {
   settingsBtn: document.getElementById("settingsBtn"),
   settingsModal: document.getElementById("settingsModal"),
   apiKeyInput: document.getElementById("apiKeyInput"),
+  syncCodeInput: document.getElementById("syncCodeInput"),
   saveSettingsBtn: document.getElementById("saveSettingsBtn"),
   closeSettingsBtn: document.getElementById("closeSettingsBtn"),
   searchInput: document.getElementById("searchInput"),
@@ -60,6 +61,7 @@ function loadLog() {
 
 function saveLog(log) {
   localStorage.setItem(todayKey(), JSON.stringify(log));
+  window.CloudSync?.pushSoon();
 }
 
 function getApiKey() {
@@ -457,6 +459,7 @@ function importData(file) {
         localStorage.setItem(GOAL_KEY, data.goal);
         els.goalInput.value = data.goal;
       }
+      window.CloudSync?.pushSoon();
       render();
       setStatus("הגיבוי יובא בהצלחה.", "");
     } catch (e) {
@@ -506,6 +509,7 @@ function initEvents() {
   // יעד
   els.goalInput.addEventListener("input", () => {
     localStorage.setItem(GOAL_KEY, els.goalInput.value);
+    window.CloudSync?.pushSoon();
     render();
   });
 
@@ -526,6 +530,8 @@ function initEvents() {
   // הגדרות
   els.settingsBtn.addEventListener("click", () => {
     els.apiKeyInput.value = getApiKey();
+    if (els.syncCodeInput)
+      els.syncCodeInput.value = localStorage.getItem("syncCode") || "";
     els.settingsModal.hidden = false;
   });
   els.closeSettingsBtn.addEventListener("click", () => {
@@ -533,8 +539,26 @@ function initEvents() {
   });
   els.saveSettingsBtn.addEventListener("click", () => {
     localStorage.setItem(API_KEY_KEY, els.apiKeyInput.value.trim());
+    const prevCode = localStorage.getItem("syncCode") || "";
+    const newCode = (els.syncCodeInput?.value || "").trim();
+    localStorage.setItem("syncCode", newCode);
     els.settingsModal.hidden = true;
-    setStatus("המפתח נשמר.", "");
+    if (newCode !== prevCode) {
+      if (newCode && window.CloudSync?.isConfigured()) {
+        setStatus("מתחבר לסנכרון...", "loading");
+        window.CloudSync.start().then((r) => {
+          if (r.ok) setStatus("הסנכרון הופעל. הנתונים יסתנכרנו בכל מכשיר.", "");
+          else if (r.reason === "not-configured")
+            setStatus("הסנכרון לא הוגדר עדיין (חסרות הגדרות Firebase).", "error");
+          else setStatus("התחברות לסנכרון נכשלה.", "error");
+        });
+      } else {
+        window.CloudSync?.stop();
+        setStatus("המפתח נשמר.", "");
+      }
+    } else {
+      setStatus("ההגדרות נשמרו.", "");
+    }
   });
   els.settingsModal.addEventListener("click", (e) => {
     if (e.target === els.settingsModal) els.settingsModal.hidden = true;
@@ -557,6 +581,18 @@ function init() {
   initEvents();
   renderSearchResults("");
   render();
+
+  // עדכון התצוגה כאשר מגיעים נתונים מהענן (ממכשיר אחר)
+  window.onCloudData = () => {
+    const g = localStorage.getItem(GOAL_KEY);
+    if (g) els.goalInput.value = g;
+    render();
+  };
+
+  // הפעלת סנכרון ענן אם הוגדר קוד סנכרון
+  if (window.CloudSync?.getCode() && window.CloudSync?.isConfigured()) {
+    window.CloudSync.start();
+  }
 
   // רישום Service Worker לתמיכה לא-מקוונת (PWA)
   if ("serviceWorker" in navigator) {
